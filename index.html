@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- 🔥 核心升级：强制浏览器不缓存，每次加载最新版 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
     <title>葡萄牙牡蛎(肉)产品调研</title>
     
     <!-- 国内极速 CDN -->
@@ -13,7 +19,6 @@
         :root { --primary: #2563eb; --bg: #f5f7fa; --text: #1f2937; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); }
-        
         .app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; background: #fff; display: flex; flex-direction: column; }
         
         /* 头部 */
@@ -32,12 +37,7 @@
         .optional-tag { color: #059669; background: #d1fae5; margin-left: 5px; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: normal; }
 
         /* 选项卡片 */
-        .option-card { 
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px; margin-bottom: 12px;
-            border: 1px solid #e5e7eb; border-radius: 12px;
-            background: #fff; transition: all 0.15s; cursor: pointer;
-        }
+        .option-card { display: flex; align-items: center; justify-content: space-between; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; transition: all 0.15s; cursor: pointer; }
         .option-card:active { background-color: #f8fafc; transform: scale(0.98); }
         .option-card.selected { border-color: var(--primary); background-color: #eff6ff; color: var(--primary); font-weight: 600; box-shadow: 0 2px 8px rgba(37,99,235,0.15); }
         .check-icon { display: none; color: var(--primary); font-weight: bold; font-size: 18px; }
@@ -55,13 +55,7 @@
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; background: #2563eb; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 
         /* 底部按钮 */
-        footer { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            max-width: 600px; margin: 0 auto;
-            padding: 15px 20px; background: #fff; border-top: 1px solid #f0f0f0;
-            display: flex; justify-content: space-between; align-items: center; z-index: 20;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
-        }
+        footer { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; padding: 15px 20px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; z-index: 20; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
         .btn { padding: 12px 24px; border-radius: 10px; font-size: 15px; border: none; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
         .btn-prev { background: #f3f4f6; color: #666; }
         .btn-next { background: var(--primary); color: #fff; flex: 1; margin-left: 15px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
@@ -70,4 +64,43 @@
         /* 状态页 */
         .status-page { text-align: center; padding: 40px 20px; }
         .status-icon { font-size: 64px; margin-bottom: 20px; display: block; }
-        .action-btn { display: block; width: 100%; padding: 16px; margin-top: 15px; border-radius: 10px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; text-align: center; text-decoration:
+        .action-btn { display: block; width: 100%; padding: 16px; margin-top: 15px; border-radius: 10px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; text-align: center; text-decoration: none; }
+        .btn-retry { background: #374151; color: white; }
+        .btn-csv { background: #059669; color: white; box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+        
+        .version-tag { text-align: center; font-size: 10px; color: #ccc; padding: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="app-container">
+
+    <!-- 顶部 -->
+    <header>
+        <h1>🦪 产品调研</h1>
+        <div style="font-size:12px; color:#999;" v-if="step > 0 && step <= totalSteps">{{ step }} / {{ totalSteps }}</div>
+    </header>
+    <div class="progress-bar" v-if="step > 0 && step <= totalSteps">
+        <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+    </div>
+
+    <main>
+        <!-- 0. 角色选择 -->
+        <div v-if="step === 0" style="padding-top: 20px;">
+            <div style="text-align:center; margin-bottom:30px;">
+                <h2 style="font-size:22px; color:#111;">请选择您的身份</h2>
+                <p style="color:#666; font-size:14px; margin-top:5px;">我们将为您定制专属问题</p>
+            </div>
+            <div class="role-card" @click="startSurvey('restaurant')">
+                <div class="role-icon">👨‍🍳</div>
+                <div><div style="font-weight:bold; font-size:17px;">餐厅经营者</div><div style="font-size:13px; color:#666; margin-top:4px;">B端：采购 / 后厨 / 老板</div></div>
+            </div>
+            <div class="role-card" @click="startSurvey('consumer')">
+                <div class="role-icon">🏠</div>
+                <div><div style="font-weight:bold; font-size:17px;">家庭消费者</div><div style="font-size:13px; color:#666; margin-top:4px;">C端：自己做饭 / 海鲜爱好者</div></div>
+            </div>
+            <!-- 版本号：看到 v4.3 说明更新成功 -->
+            <div class="version-tag">v4.3 (防白屏版)</div>
+        </div>
+
+        <!
