@@ -3,46 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 核心：禁止缓存，保证加载最新版 -->
+    <!-- 强制防缓存 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>牡蛎产品调研</title>
     
-    <!-- 极速 CDN -->
-    <script src="https://cdn.staticfile.org/vue/3.3.4/vue.global.prod.min.js"></script>
+    <!-- 1. 更换为更稳定的国内 CDN (360前端库) -->
+    <script src="https://lib.baomitu.com/vue/3.3.4/vue.global.prod.min.js"></script>
     
     <style>
-        :root { --primary: #1677ff; --bg: #f5f7fa; --text: #1f2937; --card-bg: #ffffff; }
+        /* 基础重置 */
+        :root { --primary: #1677ff; --bg: #f5f7fa; --text: #1f2937; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.5; }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.5; }
+        
+        /* 启动时的加载层 (防止白屏) */
+        #loading-mask {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: #666;
+        }
         
         .app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; background: #fff; display: flex; flex-direction: column; }
         
-        /* 顶部导航 */
-        header { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); z-index: 100; }
+        /* 顶部 */
+        header { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(255,255,255,0.95); z-index: 100; }
         h1 { font-size: 16px; font-weight: 800; color: #333; margin: 0; }
-        .step-badge { font-size: 12px; background: #f0f2f5; padding: 2px 8px; border-radius: 10px; color: #666; font-weight: 600; }
+        .step-badge { font-size: 12px; background: #f0f2f5; padding: 2px 8px; border-radius: 10px; color: #666; }
         .progress-bar { height: 3px; background: #f0f0f0; width: 100%; }
         .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
 
-        /* 主体内容 */
+        /* 内容区 */
         main { flex: 1; padding: 20px 16px; overflow-y: auto; padding-bottom: 90px; }
         
-        /* 问题标题 - 极简高亮设计 */
+        /* 题目样式 */
         .q-wrapper { margin-bottom: 20px; }
         .q-keyword { font-size: 20px; font-weight: 900; color: #000; display: block; margin-bottom: 4px; }
-        .q-context { font-size: 14px; color: #666; font-weight: 400; }
+        .q-context { font-size: 14px; color: #666; }
         .optional-tag { display: inline-block; font-size: 12px; background: #e6f4ff; color: #1677ff; padding: 1px 5px; border-radius: 4px; margin-left: 5px; vertical-align: middle; transform: translateY(-2px); }
 
-        /* 选项布局容器：支持网格 */
+        /* 选项样式 */
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        /* 如果选项字数少，使用双列布局更紧凑 */
         .options-grid.compact { grid-template-columns: 1fr 1fr; }
-
-        /* 选项卡片 - 增大点击热区 */
         .option-card { 
-            position: relative; display: flex; align-items: center; justify-content: center; text-align: center;
-            padding: 14px 10px; 
-            border: 2px solid #f0f0f0; border-radius: 12px;
-            background: #fff; transition: all
+            padding: 14px 10px; border: 2px solid #f0f0f0; border-radius: 12px;
+            background: #fff; text-align: center; font-size: 15px; font-weight: 500; color: #444;
+            transition: all 0.1s; cursor: pointer;
+        }
+        .option-card:active { background-color: #fafafa; transform: scale(0.98); }
+        .option-card.selected { border-color: var(--primary); background-color: #e6f4ff; color: var(--primary); font-weight: 700; }
+
+        /* 角色卡片 */
+        .role-card { display: flex; align-items: center; padding: 24px; margin-bottom: 16px; border: 2px solid #f0f0f0; border-radius: 16px; background: #fff; }
+        .role-card:active { transform: scale(0.97); }
+        .role-icon { font-size: 40px; margin-right: 16px; }
+        .role-title { font-size: 18px; font-weight: 800; color: #333; margin-bottom: 4px; }
+        .role-sub { font-size: 13px; color: #888; }
+
+        /* 滑块 */
+        .slider-container { background: #fafafa; padding: 30px 20px; border-radius: 16px; text-align: center; border: 1px solid #f0f0f0; }
+        .price-val { font-size: 42px; font-weight: 900; color: var(--primary); letter-spacing: -1px; }
+        .price-unit { font-size: 14px; color: #999; margin-bottom: 20px; }
+        input[type=range] { width: 100%; margin: 20px 0; height: 8px; background: #e0e0e0; border-radius: 10px; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; background: #fff; border-radius: 50%; border: 4px solid var(--primary); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+        /* 文本框 */
+        textarea { width: 100%; padding: 16px; border: 2px solid #f0f0f0; border-radius: 12px; font-size: 16px; outline: none; background: #fafafa; }
+        textarea:focus { border-color: var(--primary); background: #fff; }
+
+        /* 底部 */
+        footer { 
+            position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto;
+            padding: 12px 16px; background: rgba(255,255,255,0.9); backdrop-filter: blur(5px);
+            border-top: 1px solid #f0f0f0; display: flex; gap: 12px; z-index: 50;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+        .btn { border-radius: 12px; font-size: 16px; border: none; font-weight: 700; cursor: pointer; height: 48px; display: flex; align-items: center; justify-content: center; }
+        .btn-prev { background: #f5f5f5; color: #999; width: 48px; }
+        .btn-next { background: var(--primary); color: #fff; flex: 1; }
+        .btn-next:disabled { background: #e0e0e0; color: #aaa; }
+
+        /* 状态页 */
+        .status-page { text-align: center; padding-top: 40px; }
+        .icon-large { font-size: 72px; margin-bottom: 20px; display: block; }
+        .btn-dl { background: #059669; color: white; width: 100%; margin-top: 20px; }
+        
+        /* 错误日志显示 (用于调试白屏) */
+        #error-log { display: none; background: #fff0f0; color: red; padding: 20px; font-size: 12px; word-break: break-all; position: fixed; top: 0; left: 0; width: 100%; z-index: 10000; }
+    </style>
+</head>
+<body>
+
+<!-- 1. 启动加载层 -->
+<div id="loading-mask">
+    <div style="font-size: 30px; margin-bottom: 20px;">🦪</div>
+    <div>正在加载问卷...</div>
+    <div style="font-size: 12px; color: #999; margin-top: 10px;">V8.0 真实极速版</div>
+</div>
+
+<!-- 2. 错误日志 (如果白屏会自动显示) -->
+<div id="error-log"></div>
+
+<div id="app" class="app-container" style="display: none;">
+
+    <header>
+        <h1>🎯 牡蛎产品调研</h1>
+        <div class="step-badge" v-if="step > 0 && step <= totalSteps">{{ step }} / {{ totalSteps }}</div>
+    </header>
+    <div class="progress-bar" v-if="step > 0 && step <= totalSteps">
+        <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+    </div>
+
+    <main>
+        <!-- 0. 角色 -->
+        <div v-if="step === 0">
+            <h2 style="font-size: 24px; font-weight: 900; margin-bottom: 8px; text-align: center;">您是？</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px; font-size: 14px;">请选择身份</p>
+            
+            <div class="role-card" @click="startSurvey('restaurant')">
+                <div class="role-icon">👨‍🍳</div>
+                <div><div class="role-title">餐厅经营者</div><div class="role-sub">采购 / 后厨 / 老板</div></div>
+            </div>
+            <div class="role-card" @click="startSurvey('consumer')">
+                <div class="role-icon">🏠</div>
+                <div><div class="role-title">家庭消费者</div><div class="role-sub">自己做饭 / 海鲜爱好者</div></div>
+            </div>
+        </div>
+
+        <!-- 1. 答题 -->
+        <div v-else-if="step > 0 && step <= totalSteps">
+            <div class="q-wrapper">
+                <span class="q-keyword">{{ currentQuestion.keyword }} <span v-if="currentQuestion.optional" class="optional-tag">选填</span></span>
+                <span class="q-context">{{ currentQuestion.text }}</span>
+            </div>
+
+            <template v-if="['single', 'multiple'].includes(currentQuestion.type)">
+                <div :class="['options-grid', isCompact(currentQuestion.options) ? 'compact' : '']">
+                    <div v-for="(opt, idx) in currentQuestion.options" :key="idx" 
+                         @click="handleOptionClick(opt, currentQuestion.type)"
+                         :class="['option-card', isSelected(opt) ? 'selected' : '']">
+                        {{ opt }}
+                    </div>
+                </div>
+            </template>
+
+            <div v-if="currentQuestion.type === 'slider'" class="slider-container">
+                <div class="price-val"><span style="font-size:24px">¥</span>{{ tempAnswer }}</div>
+                <div class="price-unit">每盒 (250g) 预期价格</div>
+                <input type="range" :min="currentQuestion.min" :max="currentQuestion.max" step="0.5" v-model="tempAnswer">
+                <div style="display:flex; justify-content:space-between; color:#999; font-size:12px; font-weight:600;">
+                    <span>¥{{ currentQuestion.min }}</span><span>¥{{ currentQuestion.max }}</span>
+                </div>
+            </div>
+
+            <div v-if="currentQuestion.type === 'text'">
+                <textarea v-model="tempAnswer" rows="5" placeholder="请在此输入..."></textarea>
+            </div>
+        </div>
+
+        <!-- 2. 状态页 -->
+        <div v-else class="status-page">
+            <div v-if="isSubmitting">
+                <div class="icon-large" style="animation: bounce 1s infinite;">🔄</div>
+                <h3>正在连接服务器...</h3>
+                <p style="color:#666; font-size:13px;">请勿关闭页面，预计需 3-5 秒</p>
+            </div>
+
+            <div v-else-if="submitSuccess">
+                <div class="icon-large">✅</div>
+                <h3 style="color:var(--primary);">提交成功</h3>
+                <p style="color:#666; margin-bottom: 30px;">数据已成功传输至后台。</p>
+                <button @click="resetSurvey" style="background:transparent; border:none; color:var(--primary); font-weight:bold;">填写下一份</button>
+            </div>
+
+            <div v-else>
+                <div class="icon-large">⚠️</div>
+                <h3>网络连接超时</h3>
+                <p style="color:#666; font-size:13px;">无法连接至美国服务器，请手动保存：</p>
+                <button @click="exportCSV" class="btn btn-dl">📥 点击下载数据文件</button>
+                <button @click="submitData" style="margin-top:20px; background:none; border:none; color:#666; text-decoration:underline;">再试一次</button>
+            </div>
+        </div>
+    </main>
+
+    <footer v-if="step > 0 && step <= totalSteps">
+        <button @click="prevStep" class="btn btn-prev">←</button>
+        <button @click="nextStep" class="btn btn-next">
+            {{ getNextBtnText() }}
+        </button>
+    </footer>
+
+</div>
+
+<script>
+    // 全局错误捕获 (防止白屏无反馈)
+    window.onerror = function(msg, url, line) {
+        document.getElementById('loading-mask').style.display = 'none';
+        const log = document.getElementById('error-log');
+        log.style.display = 'block';
+        log.innerHTML += `Error: ${msg} (Line: ${line})<br>`;
+        return false;
+    };
+
+    const { createApp } = Vue;
+
+    const APP_ID = "1iqfzTWgx6IhUOvjOGt5HSqg-MdYXbMMI";
+    const APP_KEY = "7r3MYrx91UJEoVBrj1sVATOV";
+    const API_URL = "https://1iqfztwg.api.lncldglobal.com/1.1/classes/SurveyData";
+
+    const surveyDb = {
+        restaurant: [
+            { id: 'b_type', type: 'single', keyword: '餐厅类型', text: '您经营的餐厅属于哪一类？', options: ['烧烤/大排档', '中式正餐', '火锅/串串', '快餐/简餐', '海鲜特色店', '自助餐'] },
+            { id: 'b_current', type: 'single', keyword: '目前用料', text: '店内主要使用哪种形态的牡蛎？', options: ['带壳鲜活', '冷冻半壳', '冷冻纯肉', '未使用'] },
+            { id: 'b_pain', type: 'multiple', keyword: '主要痛点', text: '使用鲜活牡蛎时最大的麻烦？(多选)', options: ['人工开壳难', '死亡损耗高', '大小不均', '肥度不稳定', '有空壳/泥沙'] },
+            { id: 'b_dish', type: 'multiple', keyword: '预计做法', text: '如果用这款冷冻肉，计划做什么菜？', options: ['蚵仔煎/酥炸', '海鲜粥/汤', '火锅涮煮', '中式爆炒', '锡纸/蒜蓉烤'] },
+            { id: 'b_pack', type: 'single', keyword: '包装规格', text: '哪种大小方便后厨控本？(打样250g)', options: ['250g (小份)', '500g (标准)', '1kg (大包)', '2.5kg (量贩)'] },
+            { id: 'b_price', type: 'slider', keyword: '心理价位', text: '250g/盒 (约25粒) 合理进货价？', min: 5, max: 20 },
+            { id: 'b_premium', type: 'single', keyword: '溢价意愿', text: '若做到“不破肚、易解冻”，愿加价吗？', options: ['不加价', '加 0.5-1元', '加 1-2元', '加 2元以上'] },
+            { id: 'b_vol', type: 'single', keyword: '月采购量', text: '若试菜满意，预估用量？', options: ['50斤内', '50-200斤', '200-500斤', '500斤+'] },
+            { id: 'b_factor', type: 'multiple', keyword: '供应商', text: '选供应商最看重哪两点？', options: ['价格便宜', '供货稳定', '品质一致', '账期结算', '售后服务'] },
+            { id: 'b_contact', type: 'text', keyword: '联系方式', text: '如有意试样，请留电话/店名', optional: true }
+        ],
+        consumer: [
+            { id: 'c_freq', type: 'single', keyword: '食用频率', text: '平时多久吃一次牡蛎/生蚝？', options: ['每周吃', '每月1-2次', '几个月一次', '几乎不吃'] },
+            { id: 'c_habit', type: 'single', keyword: '处理习惯', text: '在家处理海鲜的情况？', options: ['经常自己做', '偶尔尝试', '嫌麻烦/脏', '只吃外卖'] },
+            { id: 'c_accept', type: 'single', keyword: '接受度', text: '能接受“去壳纯肉盒冻”吗？', options: ['非常喜欢', '可以接受', '一般', '只认鲜活'] },
+            { id: 'c_eat', type: 'multiple', keyword: '怎么吃', text: '如果在家里做，主要做法？', options: ['煮汤/粥', '煎蛋/蚵仔煎', '火锅涮菜', '空气炸锅', '爆炒/红烧'] },
+            { id: 'c_pack', type: 'single', keyword: '包装偏好', text: '家庭常备倾向多大包装？', options: ['250g (一顿)', '500g (两顿)', '1kg (大份)'] },
+            { id: 'c_price', type: 'slider', keyword: '心理价位', text: '250g/盒 能接受的日常价格？', min: 5, max: 20 },
+            { id: 'c_prem', type: 'single', keyword: '品质溢价', text: '若做到“易解冻、不破肚”，愿多付钱吗？', options: ['不愿意', '贵 1-2元', '贵 3元以上'] },
+            { id: 'c_worry', type: 'multiple', keyword: '最大顾虑', text: '网购冻品最担心什么？', options: ['口感像棉花', '缩水严重', '腥味重', '个头太小', '运输化冻'] },
+            { id: 'c_buy', type: 'single', keyword: '购买渠道', text: '通常在哪里买？', options: ['生鲜APP', '京东/淘宝', '社区团购', '菜市场'] },
+            { id: 'c_age', type: 'single', keyword: '年龄段', text: '您的年龄范围？', options: ['18-25岁', '26-35岁', '36-45岁', '46岁以上'] },
+            { id: 'c_msg', type: 'text', keyword: '建议留言', text: '任何关于口味、包装的建议？', optional: true }
+        ]
+    };
+
+    createApp({
+        data() {
+            return { step: 0, role: null, answers: {}, tempAnswer: null, isSubmitting: false, submitSuccess: false }
+        },
+        computed: {
+            questions() { return this.role ? surveyDb[this.role] : []; },
+            currentQuestion() { 
+                if (!this.questions || this.step > this.totalSteps) return {};
+                return this.questions[this.step - 1]; 
+            },
+            totalSteps() { return this.questions.length; },
+            progress() { return this.step === 0 ? 0 : Math.round(((this.step - 1) / this.totalSteps) * 100); }
+        },
+        mounted() {
+            // Vue 加载完成后，移除加载层，显示 App
+            document.getElementById('loading-mask').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+        },
+        methods: {
+            startSurvey(role) { this.role = role; this.step = 1; this.initTempAnswer(); },
+            initTempAnswer() {
+                const q = this.currentQuestion;
+                if (!q || !q.type) return; 
+                if (q.type === 'slider') this.tempAnswer = Math.floor((q.min + q.max) / 2);
+                else if (q.type === 'multiple') this.tempAnswer = [];
+                else this.tempAnswer = '';
+            },
+            isCompact(options) { return options.every(opt => opt.length < 9); },
+            handleOptionClick(opt, type) {
+                if (type === 'single') {
+                    this.tempAnswer = opt;
+                    setTimeout(() => { this.nextStep() }, 150);
+                } else if (type === 'multiple') {
+                    const idx = this.tempAnswer.indexOf(opt);
+                    idx > -1 ? this.tempAnswer.splice(idx, 1) : this.tempAnswer.push(opt);
+                }
+            },
+            isSelected(opt) { return Array.isArray(this.tempAnswer) ? this.tempAnswer.includes(opt) : this.tempAnswer === opt; },
+            prevStep() { this.step > 1 ? (this.step--, this.initTempAnswer()) : this.step = 0; },
+            nextStep() {
+                if (!this.currentQuestion.optional) {
+                    if (!this.tempAnswer || (Array.isArray(this.tempAnswer) && this.tempAnswer.length === 0)) return;
+                }
+                this.answers[this.currentQuestion.id] = this.tempAnswer;
+                if(this.step < this.totalSteps) {
+                    this.step++;
+                    this.initTempAnswer();
+                } else {
+                    this.submitData();
+                }
+            },
+            getNextBtnText() {
+                if (this.step === this.totalSteps) return '提交';
+                if (this.currentQuestion.optional && (!this.tempAnswer || this.tempAnswer.length===0)) return '跳过';
+                return '下一题';
+            },
+            async submitData() {
+                this.step = this.totalSteps + 1; // 立即切页面，防止白屏
+                this.isSubmitting = true;
+                
+                // 清洗数据：只传有用的，空值设为空字符串
+                const cleanAnswers = JSON.parse(JSON.stringify(this.answers));
+                for(let k in cleanAnswers) if(cleanAnswers[k] == null) cleanAnswers[k] = "";
+
+                const finalData = { 
+                    role: this.role === 'restaurant' ? 'B端餐饮' : 'C端消费者', 
+                    timestamp: new Date(), 
+                    ...cleanAnswers 
+                };
+
+                // 核心上传逻辑：真实等待，不虚假
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'X-LC-Id': APP_ID, 'X-LC-Key': APP_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalData),
+                        keepalive: true // 关键：允许后台传输
+                    });
+
+                    if (response.ok) {
+                        this.submitSuccess = true;
+                        this.isSubmitting = false;
+                    } else { throw new Error("HTTP " + response.status); }
+                } catch (error) {
+                    console.error("Upload Error:", error);
+                    // 只有真的失败了，才显示失败页
+                    this.isSubmitting = false;
+                    this.submitSuccess = false;
+                }
+            },
+            exportCSV() {
+                let csvContent = "\uFEFFKey,Value\n";
+                for (const [key, value] of Object.entries(this.answers)) {
+                    let valStr = Array.isArray(value) ? value.join(';') : (value || "");
+                    csvContent += `${key},"${valStr.toString().replace(/\n/g, " ")}"\n`;
+                }
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
+                link.download = `data_${Date.now()}.csv`;
+                link.click();
+            },
+            resetSurvey() { this.step = 0; this.role = null; this.answers = {}; this.submitSuccess = false; }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
