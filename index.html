@@ -115,7 +115,7 @@
             <!-- 🌟 动态博弈滑块 -->
             <div v-if="currentQuestion.type === 'slider'" class="slider-box">
                 <div class="price-display">¥ {{ tempAnswer }}</div>
-                <div class="unit-display">每盒 (250g/约25粒)</div>
+                <div class="unit-display">每盒 (250g)</div>
                 
                 <input type="range" :min="currentQuestion.min" :max="currentQuestion.max" step="1" v-model="tempAnswer">
                 <div style="display:flex; justify-content:space-between; font-size:12px; color:#999; margin-bottom:10px;">
@@ -323,3 +323,4 @@
 </script>
 </body>
 </html>
+
