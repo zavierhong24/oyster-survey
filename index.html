@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>葡萄牙牡蛎(肉)产品调研</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 引入 LeanCloud SDK -->
+    <script src="//cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* 基础样式优化 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent; /* 移除微信点击高亮 */
+        }
+        
+        /* 选项卡片：增大点击热区，增强反馈 */
+        .option-card {
+            transition: transform 0.1s, background-color 0.2s;
+            position: relative;
+        }
+        .option-card:active { 
+            transform: scale(0.98); 
+            background-color: #e5e7eb; 
+        }
+        .option-card.selected {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        /* 修复滑块在移动端的触摸体验 */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; height: 6px;
+            background: #cbd5e1; border-radius: 5px; outline: none;
+            padding: 0; margin: 10px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 30px; height: 30px; /* 加大滑块按钮 */
+            border-radius: 50%; background: #2563eb;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2); border: 2px solid white;
+        }
+
+        /* 加载动画 */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="app" class="flex flex-col min-h-screen max-w-lg mx-auto bg-white shadow-xl overflow-hidden relative">
+
+    <!-- 顶部导航 -->
+    <header class="bg-white p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 z-20">
+        <h1 class="text-base font-bold text-gray-800">🦪 产品调研</h1>
+        <div class="text-xs text-gray-400" v-if="step > 0 && !isFinished">{{ step }} / {{ totalSteps }}</div>
+    </header>
+
+    <!-- 进度条 -->
+    <div class="h-1 bg-gray-100 w-full" v-if="step > 0 && !isFinished">
+        <div class="h-full bg-blue-600 transition-all duration-300" :style="{ width: progress + '%' }"></div>
+    </div>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow p-5 overflow-y-auto pb-20">
+        
+        <!-- 0. 角色选择 -->
+        <div v-if="step === 0" class="flex flex-col justify-center h-full pt-10">
+            <h2 class="text-xl font-bold text-center text-gray-800 mb-8">请选择您的身份</h2>
+            <div class="space-y-4">
+                <div @click="startSurvey('restaurant')" class="option-card p-5 rounded-xl border border-gray-200 shadow-sm flex items-center cursor-pointer">
+                    <span class="text-3xl mr-4">👨‍🍳</span>
+                    <div>
+                        <div class="font-bold text-gray-900">餐厅经营者</div>
+                        <div class="text-xs text-gray-500">餐饮采购 / 后厨 / 老板</div>
+                    </div>
+                </div>
+                <div @click="startSurvey('consumer')" class="option-card p-5 rounded-xl border border-gray-200 shadow-sm flex items-center cursor-pointer">
+                    <span class="text-3xl mr-4">🏠</span>
+                    <div>
+                        <div class="font-bold text-gray-900">家庭消费者</div>
+                        <div class="text-xs text-gray-500">自己做饭 / 海鲜爱好者</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. 答题中 -->
+        <div v-else-if="!isFinished">
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-gray-900 leading-relaxed">{{ currentQuestion.text }}</h3>
+                <p v-if="currentQuestion.sub" class="text-sm text-gray-500 mt-2 bg-gray-50 p-2 rounded inline-block">
+                    {{ currentQuestion.sub }}
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <!-- 选项列表 -->
+                <template v-if="['single', 'multiple'].includes(currentQuestion.type)">
+                    <div v-for="(opt, idx) in currentQuestion.options" :key="idx"
+                         @click="handleOptionClick(opt, currentQuestion.type)"
+                         :class="['option-card p-4 rounded-lg border flex items-center justify-between cursor-pointer', 
+                                  isSelected(opt) ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-200 text-gray-700']">
+                        <span class="font-medium text-sm">{{ opt }}</span>
+                        <i v-if="isSelected(opt)" class="fas fa-check-circle text-blue-500"></i>
+                    </div>
+                </template>
+
+                <!-- 滑块 -->
+                <div v-if="currentQuestion.type === 'slider'" class="py-8 px-2 bg-gray-50 rounded-xl text-center border border-gray-200">
+                    <div class="text-3xl font-bold text-blue-700 mb-2">¥ {{ tempAnswer }}</div>
+                    <div class="text-xs text-gray-400 mb-6">每盒(250g)预期价格</div>
+                    <input type="range" :min="currentQuestion.min" :max="currentQuestion.max" step="0.5" v-model="tempAnswer">
+                    <div class="flex justify-between text-xs text-gray-400 mt-2 px-1">
+                        <span>¥{{ currentQuestion.min }}</span>
+                        <span>¥{{ currentQuestion.max }}</span>
+                    </div>
+                </div>
+
+                <!-- 文本框 -->
+                <div v-if="currentQuestion.type === 'text'">
+                    <textarea v-model="tempAnswer" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="请输入..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 结束/提交页 -->
+        <div v-else class="flex flex-col items-center justify-center pt-10 text-center">
+            
+            <!-- 提交中状态 -->
+            <div v-if="isSubmitting">
+                <div class="spinner mb-4"></div>
+                <h3 class="font-bold text-gray-800">正在上传数据...</h3>
+                <p class="text-xs text-gray-500 mt-2">网络可能较慢，请耐心等待 5 秒</p>
+            </div>
+
+            <!-- 成功状态 -->
+            <div v-else-if="submitSuccess">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 text-4xl">✓</div>
+                <h2 class="text-xl font-bold text-gray-800 mb-2">提交成功！</h2>
+                <p class="text-sm text-gray-500 mb-8">感谢您的时间，数据已保存。</p>
+                <button @click="resetSurvey" class="text-blue-600 text-sm font-bold">填写下一份</button>
+            </div>
+
+            <!-- 失败状态 (带CSV兜底) -->
+            <div v-else>
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500 text-2xl">!</div>
+                <h2 class="text-lg font-bold text-gray-800 mb-2">网络连接超时</h2>
+                <p class="text-xs text-gray-500 mb-6 px-4">微信与国际服务器连接不畅，这很正常。<br>请直接点击下方按钮下载数据文件。</p>
+                
+                <button @click="submitData" class="w-full py-3 bg-gray-800 text-white rounded-lg font-bold mb-3 shadow-md">再试一次</button>
+                <button @click="exportCSV" class="w-full py-3 bg-blue-600 text-white rounded-lg font-bold shadow-md flex items-center justify-center gap-2">
+                    <i class="fas fa-download"></i> 必须点击：保存数据文件
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 底部固定按钮区 -->
+    <footer v-if="step > 0 && !isFinished" class="bg-white p-4 border-t border-gray-100 fixed bottom-0 left-0 right-0 max-w-lg mx-auto z-20 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <button @click="prevStep" class="px-4 py-2 text-gray-400 text-sm font-medium hover:text-gray-600">上一题</button>
+        <button @click="nextStep" 
+                :disabled="!canProceed"
+                :class="['px-6 py-2 rounded-lg text-sm font-bold transition-all', canProceed ? 'bg-blue-600 text-white shadow-lg active:scale-95' : 'bg-gray-200 text-gray-400']">
+            {{ step === totalSteps ? '提交问卷' : '下一题' }}
+        </button>
+    </footer>
+
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    // LeanCloud 配置
+    const APP_ID = "1iqfzTWgx6IhUOvjOGt5HSqg-MdYXbMMI";
+    const APP_KEY = "7r3MYrx91UJEoVBrj1sVATOV";
+    const SERVER_URL = "https://1iqfztwg.api.lncldglobal.com";
+
+    // 初始化数据库
+    try {
+        if(typeof AV !== 'undefined') {
+            AV.init({ appId: APP_ID, appKey: APP_KEY, serverURLs: SERVER_URL });
+        }
+    } catch (e) { console.error("LeanCloud Init Error", e); }
+
+    const surveyDb = {
+        restaurant: [
+            { id: 'b_type', type: 'single', text: '您经营的餐厅类型是？', options: ['烧烤 / 大排档', '中式正餐 / 炒菜', '火锅 / 串串', '快餐 / 简餐', '海鲜特色店', '自助餐'] },
+            { id: 'b_current_use', type: 'single', text: '您目前店内主要使用的牡蛎形态？', options: ['带壳鲜活牡蛎', '冷冻半壳牡蛎', '冷冻牡蛎肉', '目前未使用'] },
+            { id: 'b_problem', type: 'multiple', text: '使用鲜活牡蛎时，遇到的主要问题？', sub: '可多选', options: ['人工开壳太麻烦', '死亡率高/损耗大', '个头大小不均匀', '品质/肥度不稳定', '容易有空壳/泥沙'] },
+            { id: 'b_dish', type: 'multiple', text: '如果使用这款冷冻牡蛎肉，计划做什么菜？', sub: '我们的产品不建议生食', options: ['蚵仔煎 / 酥炸', '海鲜粥 / 汤羹', '火锅涮煮', '中式爆炒 (宫保/蒜蓉)', '锡纸烤 (加蒜蓉粉丝)'] },
+            { id: 'b_weight_pref', type: 'single', text: '哪种包装规格最方便后厨使用？', sub: '当前打样为 250g/盒', options: ['250g (小份装，一份菜)', '500g (标准装)', '1kg (大包装)', '2.5kg (量贩装)'] },
+            { id: 'b_price_accept', type: 'slider', text: '按 250g/盒 规格，合理的进货价是多少？', sub: '内含约20-30粒肉', min: 5, max: 20 },
+            { id: 'b_premium', type: 'single', text: '若做到“不破肚、单体易解冻”，愿意加价吗？', options: ['不愿意，只看最低价', '愿意加 0.5-1 元', '愿意加 1-2 元', '愿意加 2 元以上'] },
+            { id: 'b_volume', type: 'single', text: '如果试菜满意，预估月采购量？', options: ['50斤以内', '50-200斤', '200-500斤', '500斤以上'] },
+            { id: 'b_supplier', type: 'multiple', text: '选择供应商最看重哪两点？', sub: '请选择最重要的 2 项', options: ['价格绝对便宜', '供货稳定性', '品质一致性', '账期/结算方式', '售后服务'] },
+            { id: 'b_contact', type: 'text', text: '如有意向试样，请留下联系方式或店名', sub: '选填' }
+        ],
+        consumer: [
+            { id: 'c_freq', type: 'single', text: '您平时吃牡蛎/生蚝的频率？', options: ['每周都会吃', '每月1-2次', '几个月才吃一次', '几乎不怎么吃'] },
+            { id: 'c_habit', type: 'single', text: '您在家自己处理海鲜的习惯？', options: ['经常下厨自己做', '偶尔尝试简单做法', '觉得麻烦/脏', '只吃外卖或去餐厅'] },
+            { id: 'c_form_accept', type: 'single', text: '能否接受“去壳纯肉盒冻”产品？', options: ['非常喜欢 (无壳无垃圾)', '可以接受 (看性价比)', '一般 (觉得不如鲜活)', '不接受 (只认鲜活)'] },
+            { id: 'c_scene', type: 'multiple', text: '如果在家里做，您主要会怎么吃？', options: ['煮海鲜汤 / 煮粥', '煎蛋 / 蚵仔煎', '家庭火锅 / 涮菜', '空气炸锅 / 烤箱', '爆炒 / 红烧'] },
+            { id: 'c_weight_pref', type: 'single', text: '家庭常备食材，倾向多大的包装？', options: ['200g-250g (一顿吃完)', '400g-500g (三口之家)', '1kg (大份实惠)'] },
+            { id: 'c_price_accept', type: 'slider', text: '一盒 250g 牡蛎肉，能接受的日常价格？', sub: '拖动滑块设置', min: 5, max: 20 },
+            { id: 'c_quality_pay', type: 'single', text: '若产品“无冰衣、不破肚”，愿意贵一点吗？', options: ['不愿意，越便宜越好', '愿意，只要干净方便', '非常愿意，痛恨不干净'] },
+            { id: 'c_concern', type: 'multiple', text: '网购冷冻生蚝，最大的顾虑是？', options: ['口感像“棉花”', '化冻后缩水严重', '有腥味/不新鲜', '个头太小/碎肉多', '冷链运输化冻'] },
+            { id: 'c_channel', type: 'single', text: '您通常习惯在哪里购买此类食材？', options: ['生鲜APP (盒马/朴朴)', '网购 (京东/淘宝)', '社区团购', '线下超市/菜市场'] },
+            { id: 'c_demographic', type: 'single', text: '您的年龄段？', options: ['18-25岁', '26-35岁', '36-45岁', '46岁以上'] }
+        ]
+    };
+
+    createApp({
+        data() {
+            return {
+                step: 0,
+                role: null,
+                answers: {},
+                tempAnswer: null,
+                isSubmitting: false,
+                submitSuccess: false
+            }
+        },
+        computed: {
+            questions() { return this.role ? surveyDb[this.role] : []; },
+            currentQuestion() { return this.questions[this.step - 1]; },
+            totalSteps() { return this.questions.length; },
+            progress() { return this.step === 0 ? 0 : Math.round(((this.step - 1) / this.totalSteps) * 100); },
+            canProceed() {
+                if (this.currentQuestion?.type === 'slider') return true;
+                if (!this.tempAnswer) return false;
+                if (Array.isArray(this.tempAnswer) && this.tempAnswer.length === 0) return false;
+                return true;
+            }
+        },
+        methods: {
+            startSurvey(role) { this.role = role; this.step = 1; this.initTempAnswer(); },
+            initTempAnswer() {
+                const q = this.currentQuestion;
+                if (!q) return;
+                if (q.type === 'slider') this.tempAnswer = Math.floor((q.min + q.max) / 2);
+                else if (q.type === 'multiple') this.tempAnswer = [];
+                else this.tempAnswer = '';
+            },
+            handleOptionClick(opt, type) {
+                if (type === 'single') {
+                    this.tempAnswer = opt;
+                    // 【修复1】这里去掉了延时，直接由用户点下面的“下一题”按钮
+                    // 或者保留极短延时，确保微信响应
+                    setTimeout(() => { this.nextStep() }, 150); 
+                } else if (type === 'multiple') {
+                    const idx = this.tempAnswer.indexOf(opt);
+                    idx > -1 ? this.tempAnswer.splice(idx, 1) : this.tempAnswer.push(opt);
+                }
+            },
+            isSelected(opt) {
+                return Array.isArray(this.tempAnswer) ? this.tempAnswer.includes(opt) : this.tempAnswer === opt;
+            },
+            prevStep() { this.step > 1 ? (this.step--, this.initTempAnswer()) : this.step = 0; },
+            nextStep() {
+                this.answers[this.currentQuestion.id] = this.tempAnswer;
+                if(this.step < this.totalSteps) {
+                    this.step++;
+                    this.initTempAnswer();
+                } else {
+                    this.submitData();
+                }
+            },
+            async submitData() {
+                this.isSubmitting = true;
+                
+                // 【修复2】增加 6秒 超时机制
+                // 如果 6秒 内数据库没反应，直接算失败，让用户去下载CSV
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 6000));
+                
+                const finalData = { role: this.role === 'restaurant' ? 'B端餐饮' : 'C端消费者', timestamp: new Date(), ...this.answers };
+
+                try {
+                    const savePromise = new Promise(async (resolve, reject) => {
+                        try {
+                            const SurveyObject = AV.Object.extend('SurveyData');
+                            const survey = new SurveyObject();
+                            for (const key in finalData) survey.set(key, finalData[key]);
+                            await survey.save();
+                            resolve();
+                        } catch(e) { reject(e); }
+                    });
+
+                    // 比赛：看是先保存成功，还是先超时
+                    await Promise.race([savePromise, timeout]);
+                    
+                    this.submitSuccess = true;
+                } catch (error) {
+                    console.error("Submit Failed:", error);
+                    this.submitSuccess = false; // 进入失败页面
+                } finally {
+                    this.isSubmitting = false;
+                    this.step++; // 无论成功失败，都跳到结束页
+                }
+            },
+            exportCSV() {
+                let csvContent = "\uFEFFKey,Value\n";
+                for (const [key, value] of Object.entries(this.answers)) {
+                    csvContent += `${key},"${Array.isArray(value) ? value.join(';') : value}"\n`;
+                }
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
+                link.download = `survey_${Date.now()}.csv`;
+                link.click();
+            }
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
