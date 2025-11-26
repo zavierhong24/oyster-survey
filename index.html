@@ -91,7 +91,7 @@
                 <span class="role-icon">🏠</span>
                 <div><div style="font-weight:bold">家庭消费者</div><div style="font-size:13px; color:#666">自己做饭 / 爱好者</div></div>
             </div>
-            <div class="ver-tag">V27.0 文案精修版</div>
+            <div class="ver-tag">V28.0 最终万能兼容版</div>
         </div>
 
         <!-- 1. 题目 -->
@@ -152,7 +152,7 @@
                 <h3>提交异常</h3>
                 <div style="background:#fff0f0; color:red; padding:10px; font-size:11px; border-radius:8px; margin:10px 0; text-align:left; word-break:break-all;">
                     错误详情: {{ errorMsg }}<br>
-                    (请管理员在Bmob后台删除 SurveyData 表以重置结构)
+                    (请务必最后一次删除 SurveyData 表)
                 </div>
                 <button @click="copyData" class="btn btn-copy">📋 复制数据 (手动发给调研员)</button>
                 <button @click="submitData" style="margin-top:20px; background:none; border:none; text-decoration:underline; color:#666">重试</button>
@@ -177,12 +177,12 @@
     const BMOB_APP_ID  = "dd9c39a27bd851237ad3b15f1298a836"; 
     const BMOB_REST_KEY = "e650c3cb314bb7a3e0f86384dce12b9f"; 
 
-    // 🔴 文案配置 (已按要求更新)
+    // 质量文案配置 (已按最新反馈修改)
     const qualityMap = {
         restaurant: [
-            { limit: 12, label: "🔻 低端统货", desc: "冰衣厚 / 易缩水 / 粘连", cls: "q-low" },
-            { limit: 18, label: "⚖️ 标准简装", desc: "普通冻品 / 需清洗 / 品相一般", cls: "q-mid" },
-            { limit: 99, label: "💎 优质单冻", desc: "颗粒分明 / 无冰衣 / 出口级", cls: "q-high" }
+            { limit: 12, label: "🔻 超低价盒冻", desc: "口感偏柴 / 煮后易缩水", cls: "q-low" },
+            { limit: 18, label: "⚖️ 超市优选", desc: "盒装不易裂 / 冰衣薄", cls: "q-mid" },
+            { limit: 99, label: "💎 严选精品", desc: "鲜甜饱满 / 高还原鲜活", cls: "q-high" }
         ],
         consumer: [
             { limit: 15, label: "🔻 超低价盒冻", desc: "口感偏柴 / 煮后易缩水", cls: "q-low" },
@@ -201,22 +201,24 @@
             
             { id: 'b_price_dynamic', type: 'slider', keyword: '心理价位', text: '您希望采购什么品质的产品？', min: 8, max: 30 },
             
-            { id: 'b_premium', type: 'single', keyword: '溢价意愿', text: '若做到“不破肚、易解冻”，愿加价吗？', options: ['不加价', '每盒 +1元', '每盒 +2元', '每盒 +3元', '每盒 +5元'] },
+            { id: 'b_premium', type: 'single', keyword: '溢价意愿', text: '若做到“不破肚、易解冻”，愿意加价吗？', options: ['不加价', '每盒 +1元', '每盒 +2元', '每盒 +3元', '每盒 +5元'] },
             { id: 'b_vol', type: 'single', keyword: '月采购量', text: '若试菜满意，预估月采购量？', options: ['50斤内', '50-200斤', '200-500斤', '500斤+'] },
             { id: 'b_factor', type: 'multiple', keyword: '供应商', text: '选供应商最看重哪两点？', options: ['价格便宜', '供货稳定', '品质一致', '账期结算', '售后服务'] },
             { id: 'b_contact', type: 'text', keyword: '联系方式', text: '如有意试样，请留电话/店名', optional: true }
         ],
         consumer: [
             { id: 'c_freq', type: 'single', keyword: '食用频率', text: '平时多久吃一次牡蛎/生蚝？', options: ['每周吃', '每月1-2次', '几个月一次', '几乎不吃'] },
-            { id: 'c_habit', type: 'single', keyword: '处理习惯', text: '在家处理海鲜的情况？', options: ['经常自己做', '偶尔尝试', '嫌麻烦', '只吃外卖'] },
-            { id: 'c_accept', type: 'single', keyword: '接受度', text: '能接受牡蛎盒冻产品吗？', options: ['非常喜欢', '可以接受', '一般', '只认鲜活'] },
+            { id: 'c_habit', type: 'single', keyword: '处理习惯', text: '在家处理海鲜的情况？', options: ['经常自己做', '偶尔尝试', '嫌麻烦', '只吃外卖'] }, // 已修改
+            { id: 'c_accept', type: 'single', keyword: '接受度', text: '能接受牡蛎盒冻产品吗？', options: ['非常喜欢', '可以接受', '一般', '只认鲜活'] }, // 已修改
             { id: 'c_eat', type: 'multiple', keyword: '怎么吃', text: '如果在家里做，主要做法？', options: ['煮汤/粥', '煎蛋/蚵仔煎', '火锅涮菜', '空气炸锅', '爆炒/红烧'] },
-            { id: 'c_pack', type: 'single', keyword: '包装重量', text: '家庭常备倾向多大重量？', options: ['150-250g', '350-500g', '500g以上'] },
+            { id: 'c_pack', type: 'single', keyword: '包装重量', text: '家庭常备倾向多大重量？', options: ['150-250g', '350-500g', '500g以上'] }, // 已修改：具体重量
             
-            // 动态滑块
-            { id: 'c_price_dynamic', type: 'slider', keyword: '品质选择', text: '您倾向于购买哪种品质？', min: 10, max: 40 },
+            // 价格博弈选择题 (已修改)
+            { id: 'c_price_qlty', type: 'single', keyword: '品质选择', text: '您更倾向于哪种价格与品质的组合？', options: ['¥12/盒 (普通品质)', '¥18/盒 (良好像)', '¥25/盒 (对标竞品)'] },
             
-            { id: 'c_prem', type: 'single', keyword: '品质溢价', text: '若做到“易解冻、不破肚”，愿多付钱吗？', options: ['不愿意', '每盒 +1元', '每盒 +2元', '每盒 +3元', '每盒 +5元'] },
+            // 溢价选择题 (已增加选项 + 强调每盒)
+            { id: 'c_prem', type: 'single', keyword: '品质溢价', text: '若做到“易解冻、不破肚”，愿多付钱吗？', options: ['不愿意', '每盒 +1元', '每盒 +2元', '每盒 +3元', '每盒 +5元'] }, 
+            
             { id: 'c_worry', type: 'multiple', keyword: '最大顾虑', text: '网购冻品最担心什么？', options: ['口感像棉花', '缩水严重', '腥味重', '个头太小', '运输化冻'] },
             { id: 'c_buy', type: 'single', keyword: '购买渠道', text: '通常在哪里买？', options: ['生鲜APP', '京东/淘宝', '社区团购', '菜市场'] },
             { id: 'c_age', type: 'single', keyword: '年龄段', text: '您的年龄范围？', options: ['18-25岁', '26-35岁', '36-45岁', '46岁以上'] },
@@ -273,9 +275,21 @@
                 this.step = this.totalSteps + 1;
                 this.isSubmitting = true;
                 
-                const cleanAnswers = JSON.parse(JSON.stringify(this.answers));
-                for(let k in cleanAnswers) if(cleanAnswers[k] == null) cleanAnswers[k] = "";
-                const finalData = { role: this.role === 'restaurant' ? 'B端餐饮' : 'C端消费者', ...cleanAnswers };
+                // 🔴🔴🔴 核心修复：强制所有数据转为 String 🔴🔴🔴
+                // 这样 Bmob 就再也不会报类型错误了，因为所有字段都变成了 Text 类型
+                const cleanAnswers = {};
+                const rawAnswers = JSON.parse(JSON.stringify(this.answers));
+                for(let k in rawAnswers) {
+                    let val = rawAnswers[k];
+                    if (val === null || val === undefined) val = "";
+                    if (Array.isArray(val)) val = val.join(','); // 数组转字符串
+                    cleanAnswers[k] = String(val); // 强制转字符串
+                }
+                
+                const finalData = { 
+                    role: this.role === 'restaurant' ? 'B端餐饮' : 'C端消费者', 
+                    ...cleanAnswers 
+                };
 
                 try {
                     const response = await fetch(`https://api.bmobcloud.com/1/classes/SurveyData`, {
