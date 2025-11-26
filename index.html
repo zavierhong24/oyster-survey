@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 强制浏览器每次拉取最新版，不缓存 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>牡蛎产品调研</title>
     
-    <!-- 使用国内最快的 BootCDN -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+    <!-- 极速国内源 -->
+    <script src="https://cdn.staticfile.org/vue/3.3.4/vue.global.prod.min.js"></script>
     
     <style>
         :root { --primary: #1677ff; --bg: #f5f7fa; --text: #1f2937; }
@@ -53,8 +52,8 @@
 <body>
 
 <div id="loading">
-    <div style="font-size:30px; animation:bounce 1s infinite">🚀</div>
-    <p style="color:#666; font-size:12px; margin-top:10px;">连接国内极速服务器...</p>
+    <div style="font-size:30px;">🚀</div>
+    <p style="color:#666; font-size:12px; margin-top:10px;">加载中...</p>
 </div>
 
 <div id="app" class="app-container" style="display:none">
@@ -78,7 +77,8 @@
                 <span class="role-icon">🏠</span>
                 <div><div style="font-weight:bold">家庭消费者</div><div style="font-size:13px; color:#666">自己做饭 / 爱好者</div></div>
             </div>
-            <div class="ver-tag">V20.0 Bmob 自动重建表版</div>
+            <!-- 这里的版本号仅作标识，不影响功能 -->
+            <div class="ver-tag">V23.0 正式发布版</div>
         </div>
 
         <!-- 1. 题目 -->
@@ -121,7 +121,7 @@
             <div v-else-if="submitSuccess">
                 <div style="font-size:60px">✅</div>
                 <h3 style="color:#1677ff">提交成功</h3>
-                <p style="color:#666">数据已自动保存。</p>
+                <p style="color:#666">数据已自动保存，感谢您的配合。</p>
                 <button @click="resetSurvey" style="border:none; background:none; color:#1677ff; font-weight:bold; margin-top:20px;">填写下一份</button>
             </div>
 
@@ -129,8 +129,7 @@
                 <div style="font-size:60px">❌</div>
                 <h3>提交异常</h3>
                 <div style="background:#fff0f0; color:red; padding:10px; font-size:11px; border-radius:8px; margin:10px 0; text-align:left; word-break:break-all;">
-                    错误详情: {{ errorMsg }}<br>
-                    (可能是权限未开，请管理员在后台删除表)
+                    错误详情: {{ errorMsg }}
                 </div>
                 <button @click="copyData" class="btn btn-copy">📋 复制数据 (手动发给调研员)</button>
                 <button @click="submitData" style="margin-top:20px; background:none; border:none; text-decoration:underline; color:#666">重试</button>
@@ -151,12 +150,9 @@
 
     const { createApp } = Vue;
 
-    // ============================================
-    // 🔴 Bmob 密钥 (已填好)
-    // ============================================
+    // 🔴 Bmob 密钥 (确认无误)
     const BMOB_APP_ID  = "dd9c39a27bd851237ad3b15f1298a836"; 
     const BMOB_REST_KEY = "e650c3cb314bb7a3e0f86384dce12b9f"; 
-    // ============================================
 
     const surveyDb = {
         restaurant: [
@@ -248,9 +244,10 @@
                     if (response.ok) {
                         this.submitSuccess = true;
                         this.isSubmitting = false;
+                        // 成功后不弹窗，静默成功
                     } else {
                         const err = await response.json();
-                        throw new Error(err.error || "服务器拒绝写入(可能权限未开)");
+                        throw new Error(err.error || "服务器拒绝");
                     }
                 } catch (error) {
                     this.isSubmitting = false;
