@@ -91,7 +91,7 @@
                 <span class="role-icon">🏠</span>
                 <div><div style="font-weight:bold">家庭消费者</div><div style="font-size:13px; color:#666">自己做饭 / 爱好者</div></div>
             </div>
-            <div class="ver-tag">V26.0 去粒数显示版</div>
+            <div class="ver-tag">V27.0 文案精修版</div>
         </div>
 
         <!-- 1. 题目 -->
@@ -110,10 +110,10 @@
                 </div>
             </template>
 
-            <!-- 🌟 动态博弈滑块 (已移除粒数提示) -->
+            <!-- 🌟 动态博弈滑块 -->
             <div v-if="currentQuestion.type === 'slider'" class="slider-box">
                 <div class="price-display">¥ {{ tempAnswer }}</div>
-                <div class="unit-display">每盒 (250g)</div> <!-- 修改：只保留重量 -->
+                <div class="unit-display">每盒 (250g)</div>
                 
                 <input type="range" :min="currentQuestion.min" :max="currentQuestion.max" step="1" v-model="tempAnswer">
                 <div style="display:flex; justify-content:space-between; font-size:12px; color:#999; margin-bottom:10px;">
@@ -152,7 +152,7 @@
                 <h3>提交异常</h3>
                 <div style="background:#fff0f0; color:red; padding:10px; font-size:11px; border-radius:8px; margin:10px 0; text-align:left; word-break:break-all;">
                     错误详情: {{ errorMsg }}<br>
-                    (建议在Bmob后台删除 SurveyData 表，让系统自动重建)
+                    (请管理员在Bmob后台删除 SurveyData 表以重置结构)
                 </div>
                 <button @click="copyData" class="btn btn-copy">📋 复制数据 (手动发给调研员)</button>
                 <button @click="submitData" style="margin-top:20px; background:none; border:none; text-decoration:underline; color:#666">重试</button>
@@ -177,7 +177,7 @@
     const BMOB_APP_ID  = "dd9c39a27bd851237ad3b15f1298a836"; 
     const BMOB_REST_KEY = "e650c3cb314bb7a3e0f86384dce12b9f"; 
 
-    // 质量文案配置 (已调整)
+    // 🔴 文案配置 (已按要求更新)
     const qualityMap = {
         restaurant: [
             { limit: 12, label: "🔻 低端统货", desc: "冰衣厚 / 易缩水 / 粘连", cls: "q-low" },
@@ -185,9 +185,9 @@
             { limit: 99, label: "💎 优质单冻", desc: "颗粒分明 / 无冰衣 / 出口级", cls: "q-high" }
         ],
         consumer: [
-            { limit: 15, label: "🔻 散装冻肉", desc: "像冰坨子 / 煮后缩水 / 口感柴", cls: "q-low" },
-            { limit: 25, label: "⚖️ 超市优选", desc: "独立颗粒 / 稍微清洗 / 适合煮汤", cls: "q-mid" },
-            { limit: 99, label: "💎 严选高品", desc: "个大饱满 / 鲜甜Q弹 / 媲美鲜活", cls: "q-high" }
+            { limit: 15, label: "🔻 超低价盒冻", desc: "口感偏柴 / 煮后易缩水", cls: "q-low" },
+            { limit: 25, label: "⚖️ 超市优选", desc: "盒装不易裂 / 冰衣薄", cls: "q-mid" },
+            { limit: 99, label: "💎 严选精品", desc: "鲜甜饱满 / 高还原鲜活", cls: "q-high" }
         ]
     };
 
@@ -199,7 +199,6 @@
             { id: 'b_dish', type: 'multiple', keyword: '预计做法', text: '如果用这款冷冻肉，计划做什么菜？', options: ['蚵仔煎/酥炸', '海鲜粥/汤', '火锅涮煮', '中式爆炒', '锡纸/蒜蓉烤'] },
             { id: 'b_pack', type: 'single', keyword: '包装规格', text: '哪种大小方便后厨控本？(打样250g)', options: ['250g (小份)', '500g (标准)', '1kg (大包)', '2.5kg (量贩)'] },
             
-            // 动态滑块
             { id: 'b_price_dynamic', type: 'slider', keyword: '心理价位', text: '您希望采购什么品质的产品？', min: 8, max: 30 },
             
             { id: 'b_premium', type: 'single', keyword: '溢价意愿', text: '若做到“不破肚、易解冻”，愿加价吗？', options: ['不加价', '每盒 +1元', '每盒 +2元', '每盒 +3元', '每盒 +5元'] },
